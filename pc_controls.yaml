@@ -1,0 +1,116 @@
+alias: PC Controls
+description: >-
+  Using HAS Agent for windows this controls my monitor backlights and speakers
+  using a smart plug, and even turns the computer off if left locked for 10
+  minutes.
+mode: single
+triggers:
+  - entity_id:
+      - sensor.jonahspc_sessionstate
+    to: Locked
+    for:
+      hours: 0
+      minutes: 10
+      seconds: 0
+    id: "Off"
+    trigger: state
+  - entity_id:
+      - sensor.jonahspc_sessionstate
+    to: unavailable
+    id: Off2
+    trigger: state
+  - entity_id:
+      - sensor.jonahspc_sessionstate
+    id: "On"
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 2
+    from: unavailable
+    trigger: state
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: "Off"
+              - condition: trigger
+                id: Off2
+        sequence:
+          - data: {}
+            target:
+              entity_id:
+                - button.jonahspc_sleep
+            action: button.press
+          - target:
+              device_id:
+                - 100b8a8da6924ac43bf9ee0159ac06f2
+            data: {}
+            action: switch.turn_off
+          - action: switch.turn_off
+            metadata: {}
+            data: {}
+            target:
+              entity_id:
+                - switch.monitor
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 1
+              milliseconds: 0
+          - action: switch.turn_off
+            metadata: {}
+            data: {}
+            target:
+              entity_id:
+                - switch.monitor2
+      - conditions:
+          - condition: trigger
+            id: "On"
+        sequence:
+          - metadata: {}
+            data: {}
+            target:
+              device_id: 100b8a8da6924ac43bf9ee0159ac06f2
+            action: switch.turn_on
+          - action: switch.turn_on
+            target:
+              entity_id:
+                - switch.monitor
+            data: {}
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 1
+              milliseconds: 0
+          - action: switch.turn_on
+            target:
+              entity_id:
+                - switch.monitor2
+            data: {}
+      - conditions:
+          - condition: trigger
+            id:
+              - "On"
+          - condition: time
+            after: "23:00:00"
+            before: "06:00:00"
+            weekday:
+              - sun
+              - mon
+              - tue
+              - wed
+              - thu
+              - fri
+              - sat
+        sequence:
+          - data:
+              brightness_pct: 20
+              color_temp: 500
+            target:
+              device_id:
+                - 0467ca1cc7c81ff0c3404c6ff7a04a30
+                - 903d47042375d0dcf1793373720b35ef
+            action: light.turn_on

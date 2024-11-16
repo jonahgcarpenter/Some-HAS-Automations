@@ -1,0 +1,204 @@
+alias: Vacuum
+description: >-
+  Controls my vacuum/mop robot. Cleans at 10 am or when house is vacant. Stops
+  when someone arrives. Tells me when to take off the mop after cleaning or if
+  something is wrong. And i can purposely leave my bedroom door open when
+  leaving so the robot will automatically clean my room specifically.
+mode: single
+triggers:
+  - entity_id:
+      - sensor.dr_sucky_error
+    to: remove_mop
+    id: remove mop
+    trigger: state
+  - entity_id:
+      - group.roomates
+    to: not_home
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    id: Away10m
+    trigger: state
+  - entity_id:
+      - group.roomates
+    to: home
+    id: home
+    trigger: state
+  - entity_id:
+      - person.jonah
+    id: jonah leave
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    to: not_home
+    trigger: state
+  - entity_id:
+      - sensor.dr_sucky_error
+    from: no_error
+    id: error
+    trigger: state
+  - at: "10:00:00"
+    id: 10 am
+    trigger: time
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - remove mop
+        sequence:
+          - data:
+              title: Dr. Sucky
+              message: Take off Mop
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound: short_double_low.caf
+                  badge: 1
+            action: notify.mobile_app_joney
+          - data:
+              entity_id: input_datetime.dr_sucky_mop
+              date: "{{ now().strftime('%Y-%m-%d') }}"
+            action: input_datetime.set_datetime
+      - conditions:
+          - condition: trigger
+            id: Away10m
+          - condition: state
+            entity_id: sensor.dr_sucky_water_tank
+            state: not_installed
+          - condition: state
+            entity_id: input_boolean.skip_vacuum
+            state: "off"
+          - condition: state
+            entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_opening_4
+            state: "on"
+        sequence:
+          - data:
+              segments:
+                - 5
+                - 8
+                - 1
+                - 2
+                - 11
+                - 6
+            target:
+              entity_id: vacuum.dr_sucky
+            action: dreame_vacuum.vacuum_clean_segment
+      - conditions:
+          - condition: trigger
+            id:
+              - Away10m
+          - condition: state
+            entity_id: sensor.dr_sucky_water_tank
+            state: installed
+          - condition: state
+            entity_id: input_boolean.skip_vacuum
+            state: "off"
+          - condition: state
+            entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_opening_4
+            state: "off"
+        sequence:
+          - data: {}
+            action: script.clean_common_area
+      - conditions:
+          - condition: trigger
+            id:
+              - home
+        sequence:
+          - device_id: 7ef627fc1cd7c154d37ea01bc9c25152
+            domain: vacuum
+            entity_id: 6ab9d28c0aa94f987f9fb35891234095
+            type: dock
+      - conditions:
+          - condition: trigger
+            id:
+              - jonah leave
+          - condition: state
+            entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_opening_4
+            state: "on"
+          - condition: state
+            entity_id: input_boolean.skip_vacuum
+            state: "off"
+          - condition: state
+            entity_id: group.roomates
+            state: home
+        sequence:
+          - data: {}
+            action: script.clean_jonahs_room
+          - wait_for_trigger:
+              - entity_id:
+                  - person.jonah
+                to: home
+                trigger: state
+            continue_on_timeout: false
+          - device_id: 7ef627fc1cd7c154d37ea01bc9c25152
+            domain: vacuum
+            entity_id: 6ab9d28c0aa94f987f9fb35891234095
+            type: dock
+      - conditions:
+          - condition: trigger
+            id:
+              - error
+          - condition: not
+            conditions:
+              - condition: state
+                entity_id: sensor.dr_sucky_error
+                state: unavailable
+              - condition: state
+                entity_id: sensor.dr_sucky_error
+                state: remove_mop
+        sequence:
+          - data:
+              message: >-
+                Dr. Sucky has error {{ states('sensor.dr_sucky_error') }} in the
+                {{ states('sensor.dr_sucky_current_room') }}
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound: short_double_low.caf
+                  badge: 1
+            action: notify.notify
+      - conditions:
+          - condition: trigger
+            id:
+              - 10 am
+          - condition: template
+            value_template: |
+              {{ 
+                as_timestamp(now()) - as_timestamp(states('sensor.dr_sucky_cleaning_history')) > 12 * 3600
+              }}
+          - condition: state
+            entity_id: input_boolean.skip_vacuum
+            state: "off"
+        sequence:
+          - data: {}
+            action: script.clean_common_area
+      - conditions:
+          - condition: trigger
+            id: Away10m
+          - condition: state
+            entity_id: sensor.dr_sucky_water_tank
+            state: not_installed
+          - condition: state
+            entity_id: input_boolean.skip_vacuum
+            state: "off"
+        sequence:
+          - data: {}
+            action: script.clean_common_area
+          - condition: state
+            entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_opening_4
+            state: "on"
+          - data:
+              segments:
+                - 5
+                - 8
+                - 1
+                - 2
+                - 11
+                - 6
+            target:
+              entity_id: vacuum.dr_sucky
+            action: dreame_vacuum.vacuum_clean_segment

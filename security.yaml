@@ -1,0 +1,254 @@
+alias: Security
+description: >-
+  A simple DIY security system with contact sensors, a doorbell camera, and a
+  smart lock. Tells me when someone rings the doorbell, a door is opened past a
+  certain time or when nobody is home, auto locks my front door behind me, and
+  tells me if it were to not properly lock.
+triggers:
+  - type: opened
+    device_id: 6eb1ee55e1c7643edc3389f8eea1e435
+    entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_opening
+    domain: binary_sensor
+    id: f
+    trigger: device
+  - type: opened
+    device_id: ee66f18aea492b6dec5b5f17db41d40a
+    entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_opening_2
+    domain: binary_sensor
+    id: g
+    trigger: device
+  - type: opened
+    device_id: 62448ae9206770e277bf089bb97a799f
+    entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_opening_3
+    domain: binary_sensor
+    id: p
+    trigger: device
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 3
+  - entity_id:
+      - input_boolean.alarm
+    to: "on"
+    id: alarm
+    trigger: state
+  - type: turned_on
+    device_id: 9e765c8c8ffd1a5873c007285ce06472
+    entity_id: binary_sensor.front_doorbell_visitor
+    domain: binary_sensor
+    id: visitor
+    trigger: device
+  - alias: Open
+    entity_id:
+      - cover.garage_door
+    to: open
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    id: Open
+    trigger: state
+  - device_id: 2aa3779ea965f571cf3a04b656be4350
+    domain: lock
+    entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+    type: locking
+    id: jammed
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    trigger: device
+  - entity_id:
+      - binary_sensor.front_door_status
+    to: "off"
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    id: Auto lock
+    trigger: state
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: f
+          - condition: state
+            entity_id: input_boolean.alarm
+            state: "on"
+        sequence:
+          - data:
+              title: HAS
+              message: Alarm triggered by Front Door
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound: RingerChanged.caf
+                  badge: 1
+            action: notify.notify
+      - conditions:
+          - condition: trigger
+            id: g
+          - condition: state
+            entity_id: input_boolean.alarm
+            state: "on"
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: 31d5837ade4668298d764df773f2e108
+                domain: cover
+                entity_id: 5bb52f67695043539fa65e2ac1b14d46
+                type: is_closed
+        sequence:
+          - data:
+              title: HAS
+              message: Alarm triggered by Garage Door
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound: RingerChanged.caf
+                  badge: 1
+            action: notify.notify
+      - conditions:
+          - condition: trigger
+            id: p
+          - condition: state
+            entity_id: input_boolean.alarm
+            state: "on"
+        sequence:
+          - data:
+              title: HAS
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound: RingerChanged.caf
+                  badge: 1
+              message: Alarm triggered by Patio Door
+            action: notify.notify
+      - conditions:
+          - condition: trigger
+            id:
+              - alarm
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: binary_sensor.doors
+                state: "on"
+              - condition: not
+                conditions:
+                  - condition: device
+                    device_id: 31d5837ade4668298d764df773f2e108
+                    domain: cover
+                    entity_id: 5bb52f67695043539fa65e2ac1b14d46
+                    type: is_closed
+        sequence:
+          - data:
+              title: HAS
+              message: >
+                {% if
+                is_state("binary_sensor.lumi_lumi_sensor_magnet_aq2_opening",
+                "on") %}
+                  Sir, I've set the Alarm but the Front Door is Open.
+                {% elif
+                is_state("binary_sensor.lumi_lumi_sensor_magnet_aq2_opening_2",
+                "on") %}
+                  Sir, I've set the Alarm but the Garage Door is Open.
+                {% elif
+                is_state("binary_sensor.lumi_lumi_sensor_magnet_aq2_opening_3",
+                "on") %}
+                  Sir, I've set the Alarm but the Patio Door is Open.
+                {% elif not is_state("cover.garage_door", "closed") %}
+                  Sir, I've set the Alarm but the Garage Cover is not Closed.
+                {% endif %}
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound: short_double_low.caf
+                  badge: 1
+            action: notify.notify
+      - conditions:
+          - condition: trigger
+            id:
+              - Auto lock
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: 2aa3779ea965f571cf3a04b656be4350
+                domain: lock
+                entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+                type: is_locked
+        sequence:
+          - device_id: 2aa3779ea965f571cf3a04b656be4350
+            domain: lock
+            entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+            type: lock
+      - conditions:
+          - condition: trigger
+            id:
+              - visitor
+        sequence:
+          - data:
+              title: HAS
+              message: Doorbell Ringing
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound:
+                    name: Doorbell.caf
+                    badge: 1
+            action: notify.notify
+      - conditions:
+          - condition: trigger
+            id:
+              - auto lock
+          - condition: state
+            entity_id: binary_sensor.front_door_status
+            state: "on"
+        sequence:
+          - metadata: {}
+            data:
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound: short_double_low.caf
+                  badge: 1
+              title: HAS
+              message: Front door left ajar, unable to lock the door
+            action: notify.notify
+      - conditions:
+          - condition: trigger
+            id:
+              - Open
+          - condition: state
+            entity_id: input_boolean.alarm
+            state: "off"
+          - condition: device
+            device_id: 31d5837ade4668298d764df773f2e108
+            domain: cover
+            entity_id: 5bb52f67695043539fa65e2ac1b14d46
+            type: is_open
+        sequence:
+          - data:
+              title: HAS
+              message: Sir, It seems someone has left the garage door open
+              data:
+                push:
+                  sound: short_double_low.caf
+                  badge: 1
+                url: PURPOSELY REMOVED
+            action: notify.mobile_app_joney
+      - conditions:
+          - condition: trigger
+            id:
+              - jammed
+        sequence:
+          - data:
+              title: HAS
+              message: The front door lock is jammed
+              data:
+                url: PURPOSELY REMOVED
+                push:
+                  sound: RingerChanged.caf
+                  badge: 1
+            action: notify.notify
+mode: single

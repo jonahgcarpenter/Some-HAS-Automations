@@ -1,0 +1,109 @@
+alias: Override Lights
+description: >-
+  The override lights boolean functionality referenced in lamp automations. This
+  tells the lights when we want to keep the lights on past bedtime.
+mode: single
+triggers:
+  - entity_id:
+      - sensor.jonahspc_sessionstate
+    to: unavailable
+    id: pc off
+    trigger: state
+  - entity_id:
+      - sensor.jonahspc_sessionstate
+    from: unavailable
+    id: pc on
+    trigger: state
+  - device_id: 063d702dee12a3bb37b9c552cf11d5a7
+    domain: media_player
+    entity_id: 964e09314c21d30fa8fa36837924e33b
+    type: turned_on
+    id: Tv on2
+    trigger: device
+  - type: turned_off
+    device_id: 063d702dee12a3bb37b9c552cf11d5a7
+    entity_id: 6df9ada6a9a229a6e9f5f614ff83f468
+    domain: remote
+    id: Tv off2
+    trigger: device
+  - device_id: afea33e37d9fcb2e7b7c9e1a37e9736b
+    domain: media_player
+    entity_id: 0232b41aaf2d7ecdf7ce1f957067430d
+    type: turned_on
+    id: tv on
+    trigger: device
+  - device_id: afea33e37d9fcb2e7b7c9e1a37e9736b
+    domain: media_player
+    entity_id: 0232b41aaf2d7ecdf7ce1f957067430d
+    type: turned_off
+    id: tv off
+    trigger: device
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: tv on
+        sequence:
+          - data: {}
+            target:
+              entity_id: input_boolean.lights_override
+            action: input_boolean.turn_on
+          - data: {}
+            target:
+              entity_id: switch.tv
+            action: switch.turn_on
+      - conditions:
+          - condition: trigger
+            id:
+              - tv off
+        sequence:
+          - target:
+              entity_id:
+                - switch.tv
+            data: {}
+            action: switch.turn_off
+          - if:
+              - condition: state
+                entity_id: sensor.jonahspc_sessionstate
+                state: unavailable
+            then:
+              - data: {}
+                target:
+                  entity_id: input_boolean.lights_override
+                action: input_boolean.turn_off
+      - conditions:
+          - condition: trigger
+            id: pc on
+        sequence:
+          - data: {}
+            target:
+              entity_id: input_boolean.lights_override
+            action: input_boolean.turn_on
+      - conditions:
+          - condition: trigger
+            id: pc off
+          - condition: state
+            state: "off"
+            entity_id: media_player.lg_webos_smart_tv
+        sequence:
+          - data: {}
+            target:
+              entity_id: input_boolean.lights_override
+            action: input_boolean.turn_off
+      - conditions:
+          - condition: trigger
+            id: Tv on2
+        sequence:
+          - data: {}
+            target:
+              entity_id: input_boolean.lights_override2
+            action: input_boolean.turn_on
+      - conditions:
+          - condition: trigger
+            id: Tv off2
+        sequence:
+          - data: {}
+            target:
+              entity_id: input_boolean.lights_override2
+            action: input_boolean.turn_off

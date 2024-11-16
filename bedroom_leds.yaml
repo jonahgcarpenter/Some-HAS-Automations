@@ -1,0 +1,306 @@
+alias: Bedroom LEDs
+description: >-
+  Control for my bedroom and office LEDs, incorporates my presence at home, time
+  of day, my bedroom door, my tv, and my PC into controlling the lights so that
+  after turning them on manually if i wakeup before noon, they are completely
+  automated.  
+mode: single
+triggers:
+  - entity_id:
+      - person.jonah
+    to: not_home
+    id: leaves
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    trigger: state
+  - at: "02:00:00"
+    id: 2am
+    trigger: time
+  - event: sunrise
+    id: sunrise
+    trigger: sun
+  - event: sunset
+    offset: 0
+    id: sunset
+    trigger: sun
+  - entity_id:
+      - person.jonah
+    to: home
+    id: enters
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    trigger: state
+  - entity_id:
+      - input_boolean.lights_override
+    to: "off"
+    id: override off
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    trigger: state
+  - entity_id:
+      - sensor.jonahspc_sessionstate
+    to: unavailable
+    id: pc off
+    trigger: state
+  - device_id: afea33e37d9fcb2e7b7c9e1a37e9736b
+    domain: media_player
+    entity_id: 0232b41aaf2d7ecdf7ce1f957067430d
+    type: turned_off
+    id: tv off
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    trigger: device
+  - device_id: afea33e37d9fcb2e7b7c9e1a37e9736b
+    domain: media_player
+    entity_id: 0232b41aaf2d7ecdf7ce1f957067430d
+    type: turned_on
+    id: Tv on
+    trigger: device
+  - type: opened
+    device_id: 903c17efdefc76c483a00f92e1203263
+    entity_id: ebf0e29a3e32141d5207d240a425b6c6
+    domain: binary_sensor
+    id: Door open
+    trigger: device
+  - type: not_opened
+    device_id: 903c17efdefc76c483a00f92e1203263
+    entity_id: ebf0e29a3e32141d5207d240a425b6c6
+    domain: binary_sensor
+    id: Door closed
+    trigger: device
+  - at: "12:00:00"
+    id: daytime
+    trigger: time
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - sunrise
+        sequence:
+          - data: {}
+            target:
+              entity_id: input_boolean.sunrise_mode
+            action: input_boolean.turn_on
+          - data: {}
+            target:
+              entity_id:
+                - input_boolean.daytime_mode
+                - input_boolean.sunset_mode
+            action: input_boolean.turn_off
+      - conditions:
+          - condition: trigger
+            id:
+              - daytime
+        sequence:
+          - data: {}
+            target:
+              entity_id:
+                - input_boolean.daytime_mode
+            action: input_boolean.turn_on
+          - data: {}
+            target:
+              entity_id:
+                - input_boolean.sunrise_mode
+                - input_boolean.sunset_mode
+            action: input_boolean.turn_off
+          - condition: device
+            type: is_on
+            device_id: 0467ca1cc7c81ff0c3404c6ff7a04a30
+            entity_id: c51570aebc82cc5c627261571d53c544
+            domain: light
+          - metadata: {}
+            data: {}
+            action: script.jonah_lamp_checker
+      - conditions:
+          - condition: trigger
+            id:
+              - sunset
+        sequence:
+          - data: {}
+            target:
+              entity_id:
+                - input_boolean.sunset_mode
+            action: input_boolean.turn_on
+          - data: {}
+            target:
+              entity_id:
+                - input_boolean.daytime_mode
+                - input_boolean.sunrise_mode
+            action: input_boolean.turn_off
+          - condition: device
+            type: is_on
+            device_id: 0467ca1cc7c81ff0c3404c6ff7a04a30
+            entity_id: c51570aebc82cc5c627261571d53c544
+            domain: light
+          - metadata: {}
+            data: {}
+            action: script.jonah_lamp_checker
+      - conditions:
+          - condition: trigger
+            id:
+              - override off
+          - condition: time
+            after: "02:00:00"
+            before: "06:00:00"
+            weekday:
+              - sat
+              - fri
+              - thu
+              - wed
+              - tue
+              - mon
+              - sun
+        sequence:
+          - data: {}
+            target:
+              device_id:
+                - 0467ca1cc7c81ff0c3404c6ff7a04a30
+                - a0b0467511a5add3387fb0f69595ede5
+                - 903d47042375d0dcf1793373720b35ef
+            action: light.turn_off
+      - conditions:
+          - condition: trigger
+            id:
+              - 2am
+        sequence:
+          - data: {}
+            target:
+              entity_id:
+                - input_boolean.daytime_mode
+                - input_boolean.sunrise_mode
+                - input_boolean.sunset_mode
+            action: input_boolean.turn_off
+          - condition: state
+            entity_id: input_boolean.lights_override
+            state: "off"
+          - type: is_not_open
+            condition: device
+            device_id: 903c17efdefc76c483a00f92e1203263
+            entity_id: ebf0e29a3e32141d5207d240a425b6c6
+            domain: binary_sensor
+          - data: {}
+            target:
+              device_id:
+                - 0467ca1cc7c81ff0c3404c6ff7a04a30
+                - a0b0467511a5add3387fb0f69595ede5
+                - 903d47042375d0dcf1793373720b35ef
+            action: light.turn_off
+      - conditions:
+          - condition: trigger
+            id:
+              - leaves
+        sequence:
+          - data: {}
+            target:
+              device_id:
+                - 0467ca1cc7c81ff0c3404c6ff7a04a30
+                - a0b0467511a5add3387fb0f69595ede5
+                - 903d47042375d0dcf1793373720b35ef
+            action: light.turn_off
+      - conditions:
+          - condition: trigger
+            id:
+              - pc off
+              - tv off
+          - condition: state
+            entity_id: person.jonah
+            state: home
+          - condition: device
+            type: is_on
+            device_id: 0467ca1cc7c81ff0c3404c6ff7a04a30
+            entity_id: c51570aebc82cc5c627261571d53c544
+            domain: light
+        sequence:
+          - data: {}
+            action: script.jonah_lamp_checker
+      - conditions:
+          - condition: trigger
+            id:
+              - Tv on
+          - condition: time
+            after: "23:00:00"
+            before: "06:00:00"
+            weekday:
+              - sun
+              - mon
+              - tue
+              - wed
+              - thu
+              - fri
+              - sat
+        sequence:
+          - target:
+              entity_id: scene.cinema_mode_2
+            metadata: {}
+            action: scene.turn_on
+      - conditions:
+          - condition: trigger
+            id:
+              - Door open
+          - condition: time
+            after: "02:00:00"
+            before: "06:00:00"
+            weekday:
+              - sat
+              - fri
+              - thu
+              - wed
+              - tue
+              - mon
+              - sun
+          - condition: device
+            type: is_off
+            device_id: 0467ca1cc7c81ff0c3404c6ff7a04a30
+            entity_id: c51570aebc82cc5c627261571d53c544
+            domain: light
+        sequence:
+          - metadata: {}
+            target:
+              entity_id: scene.cinema_mode_2
+            action: scene.turn_on
+      - conditions:
+          - condition: trigger
+            id:
+              - Door closed
+          - condition: time
+            after: "02:00:00"
+            before: "06:00:00"
+            weekday:
+              - sat
+              - fri
+              - thu
+              - wed
+              - tue
+              - mon
+              - sun
+          - condition: state
+            entity_id: input_boolean.lights_override
+            state: "off"
+        sequence:
+          - data: {}
+            target:
+              entity_id:
+                - light.light_strip
+                - light.lamp
+                - light.office_strip
+            action: light.turn_off
+      - conditions:
+          - condition: trigger
+            id:
+              - enters
+          - condition: state
+            entity_id: person.jonah
+            state: home
+        sequence:
+          - data: {}
+            action: script.jonah_lamp_checker

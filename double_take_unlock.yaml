@@ -1,0 +1,154 @@
+alias: Double Take Unlock
+description: >-
+  Using Frigate and Double-Take, this automation will unlock the front door or
+  open the garage door depending on which camera you are detected at. And we
+  test whether each respective roomate is at home for enhanced security
+triggers:
+  - trigger: state
+    entity_id:
+      - sensor.double_take_jonah
+    id: Jonah
+  - trigger: state
+    entity_id:
+      - sensor.double_take_will
+    id: will
+  - trigger: state
+    entity_id:
+      - sensor.double_take_grant
+    id: grant
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - Jonah
+          - condition: state
+            entity_id: person.jonah
+            state: home
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: 2aa3779ea965f571cf3a04b656be4350
+                domain: lock
+                entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+                type: is_unlocked
+          - condition: state
+            entity_id: sensor.double_take_jonah
+            state: doorbell
+        sequence:
+          - device_id: 2aa3779ea965f571cf3a04b656be4350
+            domain: lock
+            entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+            type: unlock
+      - conditions:
+          - condition: trigger
+            id:
+              - Jonah
+          - condition: state
+            entity_id: person.jonah
+            state: home
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: 31d5837ade4668298d764df773f2e108
+                domain: cover
+                entity_id: 5bb52f67695043539fa65e2ac1b14d46
+                type: is_open
+          - condition: state
+            entity_id: sensor.double_take_jonah
+            state: garage
+        sequence:
+          - device_id: 31d5837ade4668298d764df773f2e108
+            domain: cover
+            entity_id: 5bb52f67695043539fa65e2ac1b14d46
+            type: open
+      - conditions:
+          - condition: trigger
+            id:
+              - will
+          - condition: state
+            entity_id: person.will
+            state: home
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: 2aa3779ea965f571cf3a04b656be4350
+                domain: lock
+                entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+                type: is_unlocked
+          - condition: state
+            entity_id: sensor.double_take_will
+            state: doorbell
+        sequence:
+          - device_id: 2aa3779ea965f571cf3a04b656be4350
+            domain: lock
+            entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+            type: unlock
+      - conditions:
+          - condition: trigger
+            id:
+              - will
+          - condition: state
+            entity_id: person.will
+            state: home
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: 31d5837ade4668298d764df773f2e108
+                domain: cover
+                entity_id: 5bb52f67695043539fa65e2ac1b14d46
+                type: is_open
+          - condition: state
+            entity_id: sensor.double_take_will
+            state: garage
+        sequence:
+          - device_id: 31d5837ade4668298d764df773f2e108
+            domain: cover
+            entity_id: 5bb52f67695043539fa65e2ac1b14d46
+            type: open
+      - conditions:
+          - condition: trigger
+            id:
+              - grant
+          - condition: state
+            entity_id: person.grant
+            state: home
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: 2aa3779ea965f571cf3a04b656be4350
+                domain: lock
+                entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+                type: is_unlocked
+          - condition: state
+            entity_id: sensor.double_take_grant
+            state: doorbell
+        sequence:
+          - device_id: 2aa3779ea965f571cf3a04b656be4350
+            domain: lock
+            entity_id: 65bd304d7210d7c0c850ea1b6e7439cf
+            type: unlock
+      - conditions:
+          - condition: trigger
+            id:
+              - grant
+          - condition: state
+            entity_id: person.grant
+            state: home
+          - condition: not
+            conditions:
+              - condition: device
+                device_id: 31d5837ade4668298d764df773f2e108
+                domain: cover
+                entity_id: 5bb52f67695043539fa65e2ac1b14d46
+                type: is_open
+          - condition: state
+            entity_id: sensor.double_take_grant
+            state: garage
+        sequence:
+          - device_id: 31d5837ade4668298d764df773f2e108
+            domain: cover
+            entity_id: 5bb52f67695043539fa65e2ac1b14d46
+            type: open
+mode: single
