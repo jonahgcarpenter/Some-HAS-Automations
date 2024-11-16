@@ -1,1 +1,1 @@
-* Some HAS Automations
+# Some HAS Automations
