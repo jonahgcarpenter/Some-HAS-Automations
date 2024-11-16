@@ -3,7 +3,7 @@ description: >-
   Control for my bedroom and office LEDs, incorporates my presence at home, time
   of day, my bedroom door, my tv, and my PC into controlling the lights so that
   after turning them on manually if i wakeup before noon, they are completely
-  automated.  
+  automated. Also Jonah's lamp checker is just a seperate script that defines certain lamp colors depeding on the time of day. 
 mode: single
 triggers:
   - entity_id:
